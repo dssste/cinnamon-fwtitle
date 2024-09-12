@@ -57,15 +57,9 @@ class WindowHandler {
 	}
 };
 
-function PPLet(orientation, panel_height, instance_id) {
-	this._init(orientation, panel_height, instance_id);
-}
-
-PPLet.prototype = {
-	__proto__: Applet.TextApplet.prototype,
-
-	_init: function(orientation, panel_height, instance_id) {
-		Applet.TextApplet.prototype._init.call(this, orientation, panel_height, instance_id);
+class FocusdWindowTitle extends Applet.TextApplet {
+	constructor(orientation, panel_height, instance_id) {
+		super(orientation, panel_height, instance_id);
 
 		this.actor.set_track_hover(false);
 		this.appletEnabled = false;
@@ -86,39 +80,39 @@ PPLet.prototype = {
 		this.signals.connect(Main.panelManager, 'monitors-changed', this._updateWatchedMonitors, this);
 		this.signals.connect(global.window_manager, 'switch-workspace', this._refreshAllItems, this);
 		this.signals.connect(Cinnamon.WindowTracker.get_default(), "window-app-changed", this._onWindowAppChanged, this);
-	},
+	}
 
 	on_applet_added_to_panel(userEnabled) {
 		this.appletEnabled = true;
-	},
+	}
 
 	on_applet_removed_from_panel() {
 		this.signals.disconnectAllSignals();
 		for (let window of windows) {
 			window.destroy();
 		}
-	},
+	}
 
 	on_applet_instances_changed() {
 		this._updateWatchedMonitors();
-	},
+	}
 
 	on_panel_height_changed() {
 		this._refreshAllItems();
-	},
+	}
 
 	on_panel_icon_size_changed(size) {
 		this._refreshAllItems();
-	},
+	}
 
 	_onWindowAddedAsync(display, metaWindow, monitor) {
 		Mainloop.timeout_add(20, Lang.bind(this, this._onWindowAdded, display, metaWindow, monitor));
-	},
+	}
 
 	_onWindowAdded(display, metaWindow, monitor) {
 		if (this._shouldAdd(metaWindow))
 			this._addWindow(metaWindow, false);
-	},
+	}
 
 	_onWindowMonitorChanged(display, metaWindow, monitor) {
 		if (this._shouldAdd(metaWindow))
@@ -128,22 +122,22 @@ PPLet.prototype = {
 			this._removeWindow(metaWindow);
 			this.refreshing = false;
 		}
-	},
+	}
 
 	_refreshItemByMetaWindow(metaWindow) {
 		let window = this._windows.find(win => (win.metaWindow == metaWindow));
 
 		if (window)
 			this._refreshItem(window);
-	},
+	}
 
 	_onWindowWorkspaceChanged(display, metaWindow, metaWorkspace) {
 		this._refreshItemByMetaWindow(metaWindow);
-	},
+	}
 
 	_onWindowAppChanged(tracker, metaWindow) {
 		this._refreshItemByMetaWindow(metaWindow);
-	},
+	}
 
 	_onWindowSkipTaskbarChanged(display, metaWindow) {
 		if (metaWindow && metaWindow.is_skip_taskbar()) {
@@ -152,7 +146,7 @@ PPLet.prototype = {
 		}
 
 		this._onWindowAdded(display, metaWindow, 0);
-	},
+	}
 
 	_refreshItem(window) {
 		window.actor.visible =
@@ -166,24 +160,24 @@ PPLet.prototype = {
 		 * one isn't shown! */
 		if (window.transient)
 			window.actor.visible = !window.actor.visible;
-	},
+	}
 
 	_refreshAllItems() {
 		for (let window of this._windows) {
 			this._refreshItem(window);
 		}
-	},
+	}
 
 	_reTitleItems() {
 		for (let window of this._windows) {
 			window.setDisplayTitle();
 		}
-	},
+	}
 
 	_updateLabels() {
 		for (let window of this._windows)
 			window.updateLabelVisible();
-	},
+	}
 
 	_updateWatchedMonitors() {
 		let n_mons = global.display.get_n_monitors();
@@ -234,7 +228,7 @@ PPLet.prototype = {
 		}
 
 		this.refreshing = false;
-	},
+	}
 
 	_addWindow(metaWindow, transient) {
 		for (let window of this._windows)
@@ -244,7 +238,7 @@ PPLet.prototype = {
 
 		let handler = new WindowHandler(this, metaWindow);
 		this._windows.push(handler);
-	},
+	}
 
 	_removeWindow(metaWindow) {
 		let i = this._windows.length;
@@ -254,7 +248,7 @@ PPLet.prototype = {
 				this._windows.splice(i, 1);
 			}
 		}
-	},
+	}
 
 	_shouldAdd(metaWindow) {
 		return Main.isInteresting(metaWindow) &&
@@ -264,5 +258,5 @@ PPLet.prototype = {
 }
 
 function main(metadata, orientation, panel_height, instance_id) {
-	return new PPLet(orientation, panel_height, instance_id);
+	return new FocusdWindowTitle(orientation, panel_height, instance_id);
 }
