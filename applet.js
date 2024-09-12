@@ -1,10 +1,6 @@
 const Cinnamon = imports.gi.Cinnamon;
-const Clutter = imports.gi.Clutter;
 const Lang = imports.lang;
 const Mainloop = imports.mainloop;
-const Meta = imports.gi.Meta;
-const St = imports.gi.St;
-
 const Applet = imports.ui.applet;
 const AppletManager = imports.ui.appletManager;
 const Main = imports.ui.main;
@@ -12,41 +8,22 @@ const SignalManager = imports.misc.signalManager;
 
 const MAX_TEXT_LENGTH = 1000;
 
-class PPSub {
-	constructor(applet, metaWindow, transient) {
+class WindowHandler {
+	constructor(applet, metaWindow) {
 		this._applet = applet;
-		this._windows = this._applet._windows;
 		this.metaWindow = metaWindow;
-		this.transient = transient;
 
-		this.setDisplayTitle();
 		this.onFocus();
 
 		this._signals = new SignalManager.SignalManager();
-		this._signals.connect(this.metaWindow, 'notify::title', this.setDisplayTitle, this);
-		this._signals.connect(this.metaWindow, "notify::minimized", this.setDisplayTitle, this);
-		this._signals.connect(this.metaWindow, "notify::tile-mode", this.setDisplayTitle, this);
+		this._signals.connect(this.metaWindow, 'notify::title', this.onFocus, this);
 		this._signals.connect(this.metaWindow, "notify::appears-focused", this.onFocus, this);
 		this._signals.connect(this.metaWindow, "unmanaged", this.onUnmanaged, this);
 	}
 
 	onUnmanaged() {
 		this.destroy();
-		this._windows.splice(this._windows.indexOf(this), 1);
-	}
-
-	setDisplayTitle() {
-		let title = this.metaWindow.get_title();
-		let tracker = Cinnamon.WindowTracker.get_default();
-		let app = tracker.get_window_app(this.metaWindow);
-
-		if (!title) title = app ? app.get_name() : '?';
-
-		title = title.replace(/\s/g, " ");
-		if (title.length > MAX_TEXT_LENGTH)
-			title = title.substr(0, MAX_TEXT_LENGTH);
-
-		this._applet.set_applet_label(title);
+		this._applet._windows.splice(this._windows.indexOf(this), 1);
 	}
 
 	destroy() {
@@ -56,19 +33,26 @@ class PPSub {
 	_hasFocus() {
 		if (!this.metaWindow || this.metaWindow.minimized)
 			return false;
-
 		if (this.metaWindow.has_focus())
 			return true;
-
 		if (global.display.focus_window && this.metaWindow.is_ancestor_of_transient(global.display.focus_window))
 			return true;
-
 		return false
 	}
 
 	onFocus() {
 		if(this._hasFocus()){
-			this.setDisplayTitle();
+			let title = this.metaWindow.get_title();
+			let tracker = Cinnamon.WindowTracker.get_default();
+			let app = tracker.get_window_app(this.metaWindow);
+
+			if (!title) title = app ? app.get_name() : '?';
+
+			title = title.replace(/\s/g, " ");
+			if (title.length > MAX_TEXT_LENGTH)
+				title = title.substr(0, MAX_TEXT_LENGTH);
+
+			this._applet.set_applet_label(title);
 		}
 	}
 };
@@ -258,9 +242,8 @@ PPLet.prototype = {
 				window.transient == transient)
 				return;
 
-		let appButton = new PPSub(this, metaWindow, transient);
-
-		this._windows.push(appButton);
+		let handler = new WindowHandler(this, metaWindow);
+		this._windows.push(handler);
 	},
 
 	_removeWindow(metaWindow) {
