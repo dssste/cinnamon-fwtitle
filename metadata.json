@@ -1,0 +1,9 @@
+{
+    "uuid": "fwtitle@dssste",
+    "name": "Focused Window Title",
+    "description": "Displays the title of the currently focused window.",
+    "icon": "window",
+    "author": "dssste",
+    "version": "1.0",
+    "max-instances": 1
+}
