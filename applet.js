@@ -67,19 +67,11 @@ class FocusdWindowTitle extends Applet.TextApplet {
 		this._windows = [];
 		this._monitorWatchList = [];
 
-		this.buttonWidth = 299;
-
-		this._updateLabels();
-		this.showAllWorkspaces = true;
-
 		this.signals = new SignalManager.SignalManager(null);
 		this.signals.connect(global.display, 'window-created', this._onWindowAddedAsync, this);
 		this.signals.connect(global.display, 'window-monitor-changed', this._onWindowMonitorChanged, this);
-		this.signals.connect(global.display, 'window-workspace-changed', this._onWindowWorkspaceChanged, this);
 		this.signals.connect(global.display, 'window-skip-taskbar-changed', this._onWindowSkipTaskbarChanged, this);
 		this.signals.connect(Main.panelManager, 'monitors-changed', this._updateWatchedMonitors, this);
-		this.signals.connect(global.window_manager, 'switch-workspace', this._refreshAllItems, this);
-		this.signals.connect(Cinnamon.WindowTracker.get_default(), "window-app-changed", this._onWindowAppChanged, this);
 	}
 
 	on_applet_added_to_panel(userEnabled) {
@@ -95,14 +87,6 @@ class FocusdWindowTitle extends Applet.TextApplet {
 
 	on_applet_instances_changed() {
 		this._updateWatchedMonitors();
-	}
-
-	on_panel_height_changed() {
-		this._refreshAllItems();
-	}
-
-	on_panel_icon_size_changed(size) {
-		this._refreshAllItems();
 	}
 
 	_onWindowAddedAsync(display, metaWindow, monitor) {
@@ -124,21 +108,6 @@ class FocusdWindowTitle extends Applet.TextApplet {
 		}
 	}
 
-	_refreshItemByMetaWindow(metaWindow) {
-		let window = this._windows.find(win => (win.metaWindow == metaWindow));
-
-		if (window)
-			this._refreshItem(window);
-	}
-
-	_onWindowWorkspaceChanged(display, metaWindow, metaWorkspace) {
-		this._refreshItemByMetaWindow(metaWindow);
-	}
-
-	_onWindowAppChanged(tracker, metaWindow) {
-		this._refreshItemByMetaWindow(metaWindow);
-	}
-
 	_onWindowSkipTaskbarChanged(display, metaWindow) {
 		if (metaWindow && metaWindow.is_skip_taskbar()) {
 			this._removeWindow(metaWindow);
@@ -146,37 +115,6 @@ class FocusdWindowTitle extends Applet.TextApplet {
 		}
 
 		this._onWindowAdded(display, metaWindow, 0);
-	}
-
-	_refreshItem(window) {
-		window.actor.visible =
-			(window.metaWindow.get_workspace() == global.workspace_manager.get_active_workspace()) ||
-			window.metaWindow.is_on_all_workspaces() ||
-			this.showAllWorkspaces;
-
-		/* The above calculates the visibility if it were the normal
-		 * AppMenuButton. If this is actually a temporary AppMenuButton for
-		 * urgent windows on other workspaces, it is shown iff the normal
-		 * one isn't shown! */
-		if (window.transient)
-			window.actor.visible = !window.actor.visible;
-	}
-
-	_refreshAllItems() {
-		for (let window of this._windows) {
-			this._refreshItem(window);
-		}
-	}
-
-	_reTitleItems() {
-		for (let window of this._windows) {
-			window.setDisplayTitle();
-		}
-	}
-
-	_updateLabels() {
-		for (let window of this._windows)
-			window.updateLabelVisible();
 	}
 
 	_updateWatchedMonitors() {
@@ -208,13 +146,11 @@ class FocusdWindowTitle extends Applet.TextApplet {
 
 		// Now track the windows in our favorite monitors
 		let windows = global.display.list_windows(0);
-		if (this.showAllWorkspaces) {
-			for (let wks=0; wks<global.workspace_manager.n_workspaces; wks++) {
-				let metaWorkspace = global.workspace_manager.get_workspace_by_index(wks);
-				let wks_windows = metaWorkspace.list_windows();
-				for (let wks_window of wks_windows) {
-					windows.push(wks_window);
-				}
+		for (let wks=0; wks<global.workspace_manager.n_workspaces; wks++) {
+			let metaWorkspace = global.workspace_manager.get_workspace_by_index(wks);
+			let wks_windows = metaWorkspace.list_windows();
+			for (let wks_window of wks_windows) {
+				windows.push(wks_window);
 			}
 		}
 
